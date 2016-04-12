@@ -64,7 +64,7 @@ type CPSInterpreter() =
         "i", fun (Quotation(q)::t) k -> evalCPS q t k
         "ri", fun (Quotation(q)::t) k -> evalCPS q t (fun (a::_) -> k (a::t))
         "dip", fun (a::Quotation(q)::t) k -> evalCPS q t (fun t2 -> k (a::t2))
-        "sip", fun (Quotation(q)::a::t) k -> evalCPS q t (fun t2 -> k (a::t2))
+        "swip", fun (Quotation(q)::a::t) k -> evalCPS q t (fun t2 -> k (a::t2))
         "dup", fun (a::t) k -> k (a::a::t)
         "swap", fun (a::b::t) k -> k (b::a::t)
         "pop", fun (a::t) k -> k t
