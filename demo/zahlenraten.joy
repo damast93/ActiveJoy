@@ -1,0 +1,14 @@
+﻿define raten {
+    pop "Ihr Tip: " print readln int
+    [[1 +] swip] swip
+    [ > ] [ "Leider zu klein" printn raten ] [] if
+    [ < ] [ "Leider zu groß" printn raten ] [] if
+}
+    
+0 
+1 100 rand 
+"Das große Zahlenraten -- Erraten Sie die geheime Zahl zwischen 1 und 100" printn
+0
+raten
+pop pop
+"Toll: Sie haben die Zahl in " print print " Zügen erraten!" print
