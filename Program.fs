@@ -5,35 +5,53 @@ open ActiveJoy.Parser
 
 type MyInterpreter = CPSInterpreter
 
-let rec repl = 
-    let interpreter = new MyInterpreter () :> IInterpreter
-    fun () ->
+let rec repl (intp : IInterpreter) = 
         printf "> "
         let input = System.Console.ReadLine().Trim()
         if input <> "" && input <> ":q" then
             match run (ws >>. program .>> eof) input with
-                | Failure(msg, _, _) -> printfn "Syntax error %A" msg
+                | Failure(msg, _, _) -> printfn "Syntax error: %A" msg
                 | Success(program, _, _)  -> 
                     try
                         let (Program(defns, main)) = program
-                        defns |> List.iter (interpreter.AddDefinition)
+                        defns |> List.iter (intp.AddDefinition)
 
                         if (List.length main) > 0 then do
-                            let res = interpreter.Eval(main, [])
+                            let res = intp.Eval(main, [])
                             printfn "%A" (List.rev res)
                     with 
-                      | exn -> printfn "Runtime error %s" (exn.Message)
-            repl()
+                      | exn -> printfn "Runtime error: %s" (exn.Message)
+            repl intp 
 
-let runFile fn = 
-    let source = IO.File.ReadAllText(fn)
+let runFile path = 
+    let source = IO.File.ReadAllText(path)
+    match run (ws >>. program .>> eof) source with
+        | Failure(msg, _, _) -> printfn "Syntax error: %A" msg
+        | Success(program, _, _)  -> Interpreter.RunProgram<MyInterpreter>(program) |> ignore
+
+let loadFileAndRepl path = 
+    let source = IO.File.ReadAllText(path)
     match run (ws >>. program .>> eof) source with
         | Failure(msg, _, _) -> printfn "Syntax error %A" msg
         | Success(program, _, _)  -> 
-            let ret = Interpreter.RunProgram<MyInterpreter>(program) 
-            ignore ret
+            let (Program(defns, main)) = program
 
-printfn "CPS"
+            let intp = new MyInterpreter() :> IInterpreter
+            defns |> List.iter (intp.AddDefinition)
+
+            let fn = IO.Path.GetFileName(path)
+            printfn "%s -- %i definitions loaded" fn (defns |> List.length)
+
+            if (List.length main) > 0 then do 
+                try
+                    let res = intp.Eval(main, [])
+                    printfn "%A" (List.rev res)
+                with 
+                    | exn -> printfn "Runtime error: %s" (exn.Message)
+
+            repl(intp)
+
 match System.Environment.GetCommandLineArgs() with
-     | [|_; fn|] -> runFile(fn)
-     | _ -> repl()
+    | [|_; path|] -> loadFileAndRepl(path)
+    | [|_; "-r"; path|] -> runFile(path)
+    | _ -> repl(new MyInterpreter())

@@ -21,6 +21,11 @@ type CPSInterpreter() =
 
     // Runtime
 
+    let tostr = function
+        | String(s) -> s
+        | Number(n) -> sprintf "%i" n
+        | a -> sprintf "%A" a
+
     let builtins = [
         // Arithmetics
         "+", fun (Number(i)::Number(j)::t) k -> k (Number(j+i)::t)
@@ -45,15 +50,13 @@ type CPSInterpreter() =
         "not", fun (Boolean(a)::t) k -> k (Boolean(not a)::t)
 
         // I/O
-        "print", fun (String(s)::t) k -> printf "%s" s; k t
-        "printn", fun (String(s)::t) k -> printfn "%s" s; k t
+        "print", fun (a::t) k -> printf "%s" (tostr a); k t
+        "printn", fun (a::t) k -> printfn "%s" (tostr a); k t
         "readln", fun t k -> let s = System.Console.ReadLine() in k (String(s)::t)
         "int", fun (String(s)::t) k -> k (Number(int s)::t)
-        "str", fun stack k 
-                 -> match stack with
-                        | String(s)::t -> k stack
-                        | Number(n)::t -> k (String(sprintf "%i" n)::t)
-                        | a::t -> k (String(sprintf "%A" a)::t)
+        "str", fun (a::t) k -> k (String(tostr a)::t)
+        "rand", (let rnd = new System.Random() 
+                 in fun (Number(b)::Number(a)::t) k -> k (Number(rnd.Next(a, b))::t))
         
         // Quotation manipulation 
         "cons", fun (Quotation(l)::a::t) k -> k (Quotation(a::l)::t)
@@ -62,7 +65,6 @@ type CPSInterpreter() =
 
         // Combinators
         "i", fun (Quotation(q)::t) k -> evalCPS q t k
-        "ri", fun (Quotation(q)::t) k -> evalCPS q t (fun (a::_) -> k (a::t))
         "dip", fun (a::Quotation(q)::t) k -> evalCPS q t (fun t2 -> k (a::t2))
         "swip", fun (Quotation(q)::a::t) k -> evalCPS q t (fun t2 -> k (a::t2))
         "dup", fun (a::t) k -> k (a::a::t)
