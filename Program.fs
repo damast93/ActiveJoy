@@ -28,7 +28,7 @@ let runFile path =
     match run (ws >>. program .>> eof) source with
         | Failure(msg, _, _) -> printfn "Syntax error: %A" msg
         | Success(program, _, _)  -> Interpreter.RunProgram<MyInterpreter>(program) |> ignore
-
+        
 let loadFileAndRepl path = 
     let source = IO.File.ReadAllText(path)
     match run (ws >>. program .>> eof) source with

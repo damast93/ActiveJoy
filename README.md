@@ -91,7 +91,7 @@ Ein weiteres Beispiel: Sagen wir, es kommt eine Zahl `x` auf den Stack und wir m
 
 # Kontrollfluss
 
-Um ordentliche Programme zu schreiben, brauchen wir noch eine Möglichkeit, uns nicht ständig zu wiederholen, d.h. eigene Wörter zu definieren. Schreiben wir das mal so
+Um ordentliche Programme zu schreiben, brauchen wir zunächst noch eine Möglichkeit, uns nicht ständig zu wiederholen, d.h. eigene Wörter zu definieren. Schreiben wir das mal so
 
     define square { dup * }
 
@@ -125,3 +125,155 @@ holen sie vom Stapel und führen `cond` aus, was einen booleschen Wert auf den S
 Und tatsächlich
 
     6 fact == 720
+
+**Aufgabe 2:** Implementiert das berühmte Zahlenraten. Das Programm ermittelt eine Zufallszahl zwischen 1 und 100 und lässt uns die Zahl raten, wobei es immer angibt, ob der Versuch zu hoch oder zu niedrig war. Ich mache mal den Anfang
+
+    1 100 rand // Die Zufallszahl bestimmen
+    "Ihr Tip? " print readln int
+
+Wie geht's weiter? `readln` liest eine Eingabezeile von der Konsole und legt sie auf den Stack. `int` parst einen String zu einer Ganzzahl. Ach ja, Kommentare im C-Style, also `//` und `/**/` sind erlaubt, das ist aber nicht Teil der offiziellen Sprach-Spezifikation. Wir wollen ja die einfachstmögliche Sprache ;)
+
+# Kombinatoren 1 - bin
+
+ActiveJoy wirkt irgendwie verquer, keine Variablen, seltsame Arten, zu Schleifen zu gelangen. Das Geheimnis der Sprache sind die Kombinatoren. Wir *wollen* ja gar keine Schleife schreiben, wir wollen eine Aufgabe lösen, und das heißt Teiloperationen in einer klaren Weise zusammensetzen. Spätestens jetzt ist klar, dass ActiveJoy kein Assember-Verschnitt ist, sondern wir hochgradig funktional programmieren.
+
+Erinnern wir an das Beispiel von vorhin: Wir möchten checken, ob eine Zahl `x` vom Stack zwischen 0 und 10 liegt. Das war
+
+    5 dup 10 <= [0 >=] swip and
+
+Alles korrekt, aber irgendwie unintuitiv. Es wäre doch schöner, wenn wir
+
+    5 [0 >=] [10 <=] bin and
+
+schreiben würden. `bin` nimmt zwei Operationen und wendet sie beide auf dieselbe Eingabe an. Es ist ein einfacher Kombinator. Schreiben wir ihn uns:
+
+An dritter Stelle auf dem Stack liegt die eigentliche Eingabe. Die müssen wir zunächst an Ort und Stelle verdoppelt, weil wir sie ja zwei mal brauchen
+
+    [[dup] swip] swip
+
+Dann wenden wir die erste (untere) Operation an
+
+    dip
+
+tauschen die Kopie der Eingabe hoch
+
+    [swap] swip
+
+und führen auch die zweite Operation durch
+
+    i
+
+Zusammen
+
+    define bin {
+        [[dup] swip] swip dip [swap] swip i
+    }
+
+    5 [0 >=] [10 <=] bin and
+
+wunderbar.
+
+# Kombinatoren 2 - while
+
+Schleifen haben wir bis jetzt, wie bei unserer Fakultäts-Funktion, nur durch Rekursion bewerkstelligt bekommen. Schöner wäre doch ein Kombinator im Stil von
+
+    10 [0 >] [
+        dup printn
+        1 -
+    ] while
+
+Fange bei 10 an, und solange wie die Zahl positiv ist, einmal ausgeben und verringern. Was genau soll `while` tun? Ein Aufruf wäre `[condition] [body] while` mit Sätzen `condition` und `body`. Wir können jetzt rekursiv weitermachen
+
+    [condition] [body [condition] [body] while] [] if
+
+Wenn `condition` noch `true` ergibt, führe den Schleifenrumpf aus und danach dieselbe Schleife rekursiv, ansonsten tue nichts. Also, `[condition]` und `[body]` liegen auf dem Stack, was tut `while`? Eigentlich müssen wir an die oberste Quotation `[body]` lediglich `[[condition] [body] while]` ranschreiben. Fertig ist
+
+    define while {
+        [dup] swip swap quote // [[condition]] nach oben holen
+        [dup] swip swap quote // [[body]] nach oben holen
+        [while] concat concat concat // Alles verbinden zu [body [condition] [body] while]
+        []
+        if
+    }
+
+# Kombinatoren 3 - Listen
+
+Über funktionale Sprachen wird manchmal gesagt, es sei umständlich, alles als Rekursion zu formulieren, wie in 
+
+    let rec sum = function
+        | 0 -> 0
+        | x::xs -> x + sum xs
+    
+    sum list
+
+und der Vorteil gegenüber der imperativen Variante 
+
+    int sum = 0;
+    foreach (var i in list) 
+        sum += i;
+
+wäre marginal (zu allem Überfluss ist die naive rekursive Variante oben nichteinmal endrekursiv und liefert oft bloß einen Stackoverflow). Dieses Problem tritt nur auf, wenn man imperativen Code nachahmen will. Eine durch und durch funktionale Variante will nämlich auf gar keine Rekursion hinaus, sie will einfach nur über eine Liste eine Operation (nämlich `+`) akkumulieren und mit 0 anfangen.
+
+    fold (+) 0 [1; 2; 3; 4]
+
+Fertig. Das kann ActiveJoy auch, halt in umgekehrter Reihenfolge
+
+    [1 2 3 4] [+] 0 fold
+
+Was soll das nun bedeuten? Dass wir über Listen reden müssen: Eine Liste ist einfach genau das
+
+    [1 2 3 4]
+
+Eine Quotation, in der halt Zahlen stehen. Wir könnten natürlich versuchen, sie auszuführen, dann würde sie `1 2 3 4` auf den Stack schreiben. Aber sie ist uns auch schon in dieser Form nützlich, einfach als Liste. Ein paar Operationen auf Quotations kennen wir ja schon
+
+    [1 2] [3] concat == [1 2 3]
+
+Dann gibt es
+
+    ["Hallo" bla 5] length == 3
+
+Und natürlich können wir Elemente extrahieren, sagen wir das erste:
+
+    [5 2] head == 5
+
+Bemerkenswert ist vielleicht die Ausgabe
+
+    [print] head
+
+Das erste Element hier ist das nackte Wort `"print"`, unausgeführt, als Symbol. Wir können es natürlich wieder in eine Quotation hineinpacken
+
+    [print] head [] cons == [print]
+
+und es in dieser Form mit `i` wieder ausführen. Ach ja, `cons` hängt ein Element vor eine Liste, `quote == [] cons`, also
+
+    1 [2 3] cons = [1 2 3], 1 quote = [1]
+
+Was tut jetzt also `fold`? Alles zusammenkombinieren:
+
+    [1 2 3 4] [+] 0 fold == (((0 + 1) + 2) + 3) + 4 == 0 1 + 2 + 3 + 4 +
+
+Wir können damit auch bequem neue Listen erzeugen: Sagen wir, wir möchten die Liste `[1 2 3]` umdrehen, dann brauchen wir 
+
+    [3 2 1] == 3 2 1 [] cons cons cons
+
+Das sieht noch nach keinem `fold` aus, aber fast. Die Reihenfolge der Argumente von `cons` ist verkehrt, tauschen wir sie also billig um 
+
+    swons == swap cons
+
+Und
+
+    [3 2 1] == [] 1 swons 2 swons 3 swons
+            == [1 2 3] [swons] [] fold
+
+Cool, wir können mit `fold` also Listen durchlaufen und umdrehen
+
+    define rev { [swons] [] fold }
+
+Versuchen wir einmal, aus einem Intervall alle geraden Zahlen auszuwählen. Dazu benötigen wir erstmal das Intervall
+
+    [] 2 [10 <] [
+        dup // Den Zähler beibehalten
+        [swons] swip // Den Zähler an die Liste ranschreiben
+        1 + // Zähler erhöhen
+    ] while
+

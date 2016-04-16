@@ -11,7 +11,7 @@ type CPSInterpreter() =
         | [] -> k stack
         | Word(name)::rest ->
             if not (definitions.ContainsKey(name))
-                then failwith "Identifier not found"
+                then failwith (sprintf "Identifier `%s` not found" name)
                 else 
                     let f = definitions.[name]
                     f stack (fun stack2 -> evalCPS rest stack2 k)
@@ -58,10 +58,19 @@ type CPSInterpreter() =
         "rand", (let rnd = new System.Random() 
                  in fun (Number(b)::Number(a)::t) k -> k (Number(rnd.Next(a, b))::t))
         
-        // Quotation manipulation 
+        // Quotation/list manipulation 
+        "length", fun (Quotation(l)::t) k -> k (Number(List.length l)::t)
+        "head", fun (Quotation(x::xs)::t) k -> k (x::t)
         "cons", fun (Quotation(l)::a::t) k -> k (Quotation(a::l)::t)
         "quote", fun (a::t) k -> k (Quotation([a])::t)
         "concat", fun (Quotation(a)::Quotation(b)::t) k -> k (Quotation(b @ a)::t)
+
+        "fold", fun (a::Quotation(op)::Quotation(list)::t) k 
+                  -> let rec fold list acc cont = 
+                       match list with
+                       | [] -> cont (acc::t)
+                       | x::xs -> evalCPS op (x::acc::t) (fun (res::_) -> fold xs res cont)
+                     fold list a k
 
         // Combinators
         "i", fun (Quotation(q)::t) k -> evalCPS q t k
