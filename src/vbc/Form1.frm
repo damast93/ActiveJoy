@@ -32,13 +32,16 @@ Private Sub Form_Load()
     
     vm.Eval
     
-    MsgBox vm.Stack.ToString
+    'MsgBox vm.Stack.ToString
 
     ' Tokenizer Test
-    Dim tok As New Tokenizer
-    tok.Init "Hallo [Welt]"
+    Dim source As String
+    source = "1 2 + 3 /* Arithmetics demo " & vbCrLf & " ... */ * [[dup]] " & """" & "Hallo, Welt" & """" & " swip print // Final comment "
     
-    tok.Word
+    Dim tok As New Tokenizer
+    tok.Init source
+    
+    tok.Tokenize
     
     tok.Show
 End Sub
