@@ -18,7 +18,7 @@ Public Stack As Stack
 
 Public Sub Eval()
     Do While Instructions.Size > 0
-        Dim p As Atom: Set p = Instructions.Head
+        Dim p As atom: Set p = Instructions.Head
         
         If TypeOf p Is word Then
             Set Instructions = Instructions.Tail
@@ -37,7 +37,7 @@ End Sub
 
 Private Sub ProcessWord(ByVal s As String)
     Dim a As Number, b As Number
-    Dim x As Atom
+    Dim x As atom
     Dim q As Quotation
     
     Dim i As Long
@@ -83,6 +83,6 @@ Private Sub ProcessWord(ByVal s As String)
         
                         
         Case Else
-            Err.Raise vbObjectError + 2, Description:="Word not known"
+            Err.Raise vbObjectError + 2, Description:="Word `" & s & "` not known"
     End Select
 End Sub

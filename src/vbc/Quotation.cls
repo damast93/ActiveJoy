@@ -13,7 +13,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
-Implements Atom
+Implements atom
 
 Private m_Data As Stack
 
@@ -34,7 +34,7 @@ Private Function Atom_ToString() As String
     Set s = m_Data
     Do While s.Size > 0
         res = res & s.Head.ToString
-        If s.Size > 1 Then res = res & ", "
+        If s.Size > 1 Then res = res & " "
         Set s = s.Tail
     Loop
     

@@ -11,8 +11,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Option Explicit
+
 Private m_Size As Long
-Private m_Head As Atom
+Private m_Head As atom
 Private m_Tail As Stack
 
 Public Property Get IsEmpty() As Boolean
@@ -23,7 +25,7 @@ Public Property Get Size() As Integer
     Size = m_Size
 End Property
 
-Public Property Get Head() As Atom
+Public Property Get Head() As atom
     If m_Size > 0 Then
         Set Head = m_Head
     Else
@@ -43,7 +45,7 @@ Public Sub InitEmpty()
     m_Size = 0
 End Sub
 
-Public Sub InitCons(ByVal phead As Atom, ByVal ptail As Stack)
+Public Sub InitCons(ByVal phead As atom, ByVal ptail As Stack)
     m_Size = ptail.Size + 1
     Set m_Head = phead
     Set m_Tail = ptail

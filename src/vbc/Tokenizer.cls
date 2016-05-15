@@ -34,6 +34,15 @@ Public Sub Init(ByRef psource As String)
     current = 1
 End Sub
 
+' Weirdest "Friend" ever, but well ...
+Friend Property Get GetToken(ByVal i As Long) As Token
+    GetToken = tokens(i)
+End Property
+
+Public Property Get NumTokens() As Long
+    NumTokens = tokenCount
+End Property
+
 Private Sub PushToken(ByRef Token As Token)
     If tokenCount >= UBound(tokens) Then
         ReDim Preserve tokens(2 * UBound(tokens))
@@ -86,7 +95,7 @@ Private Property Get CurrentChar() As String
     CurrentChar = Mid$(source, current, 1)
 End Property
 
-Public Sub Word()
+Public Sub word()
     start = current
     
     Do While current < eof
@@ -204,16 +213,13 @@ Public Sub Tokenize()
         ElseIf IsNumber(CurrentChar) Then
             NumberLiteral
         Else
-            Word
+            word
         End If
     Loop
 End Sub
 
-Public Sub Show()
+Public Function GetDesc() As String
     Dim r As String
-    
-    r = source
-    r = r & vbCrLf & "----------------------" & vbCrLf
     
     r = r & "start = " & CStr(start) & vbCrLf
     r = r & "current = " & CStr(current) & vbCrLf
@@ -229,6 +235,6 @@ Public Sub Show()
         r = r & "[" & descs(tokens(i).type) & "] : " & tokens(i).content & vbCrLf
     Next i
     
-    MsgBox r
-End Sub
+    GetDesc = r
+End Function
 
